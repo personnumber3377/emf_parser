@@ -91,9 +91,13 @@ class EMFFile:
 	def serialize(self): # Serialize data back.
 		# First serialize all of the record objects... we can not use orig_data because the object may have been mutated or changed.
 
+		rec_files = [r.serialize() for r in self.records] # Just serialize each??
+		out = b""
+		for r in rec_files:
+			assert isinstance(r, bytes)
+			out += r
 
-
-		return
+		return out
 
 def parse_emf_file(data):
 	h, rest_of_data = parse_header(data)

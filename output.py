@@ -8,21 +8,28 @@ def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a sing
     return byte_integer
 
 
-class EMR_ALPHABLEND:
+import struct
+
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
+
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '24b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_ALPHABLEND"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BLENDFUNCTION', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BLENDFUNCTION', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -39,18 +46,8 @@ class EMR_ALPHABLEND:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -59,14 +56,16 @@ class EMR_ALPHABLEND:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_ALPHABLEND {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BLENDFUNCTION', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BLENDFUNCTION', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -74,32 +73,32 @@ class EMR_ALPHABLEND:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_BITBLT:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '24b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_BITBLT"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BitBltRasterOperation', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BitBltRasterOperation', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -116,18 +115,8 @@ class EMR_BITBLT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -136,14 +125,16 @@ class EMR_BITBLT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_BITBLT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BitBltRasterOperation', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BitBltRasterOperation', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -151,32 +142,32 @@ class EMR_BITBLT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_MASKBLT:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b', '4b', '2b', '4b', '4b', '24b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_MASKBLT"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'ROP4', 'Reserved', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'xMask', 'yMask', 'UsageMask', 'offBmiMask', 'cbBmiMask', 'offBitsMask', 'cbBitsMask'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'ROP4', 'Reserved', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'xMask', 'yMask', 'UsageMask', 'offBmiMask', 'cbBmiMask', 'offBitsMask', 'cbBitsMask']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -193,18 +184,8 @@ class EMR_MASKBLT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -213,14 +194,16 @@ class EMR_MASKBLT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_MASKBLT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'ROP4', 'Reserved', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'xMask', 'yMask', 'UsageMask', 'offBmiMask', 'cbBmiMask', 'offBitsMask', 'cbBitsMask']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'ROP4', 'Reserved', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'xMask', 'yMask', 'UsageMask', 'offBmiMask', 'cbBmiMask', 'offBitsMask', 'cbBitsMask'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -228,32 +211,32 @@ class EMR_MASKBLT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_PLGBLT:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '24b', '4b', '4b', '4b', '4b', '24b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_PLGBLT"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'aptlDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'xMask', 'yMask', 'UsageMask', 'offBmiMask', 'cbBmiMask', 'offBitsMask', 'cbBitsMask'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'aptlDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'xMask', 'yMask', 'UsageMask', 'offBmiMask', 'cbBmiMask', 'offBitsMask', 'cbBitsMask']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -270,18 +253,8 @@ class EMR_PLGBLT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -290,14 +263,16 @@ class EMR_PLGBLT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_PLGBLT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'aptlDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'xMask', 'yMask', 'UsageMask', 'offBmiMask', 'cbBmiMask', 'offBitsMask', 'cbBitsMask']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'aptlDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'xMask', 'yMask', 'UsageMask', 'offBmiMask', 'cbBmiMask', 'offBitsMask', 'cbBitsMask'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -305,32 +280,32 @@ class EMR_PLGBLT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETDIBITSTODEVICE:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_SETDIBITSTODEVICE"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'UsageSrc', 'iStartScan', 'cScans'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'UsageSrc', 'iStartScan', 'cScans']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -347,18 +322,8 @@ class EMR_SETDIBITSTODEVICE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -367,14 +332,16 @@ class EMR_SETDIBITSTODEVICE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETDIBITSTODEVICE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'UsageSrc', 'iStartScan', 'cScans']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'UsageSrc', 'iStartScan', 'cScans'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -382,32 +349,32 @@ class EMR_SETDIBITSTODEVICE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_STRETCHBLT:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '24b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_STRETCHBLT"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BitBltRasterOperation', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BitBltRasterOperation', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -424,18 +391,8 @@ class EMR_STRETCHBLT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -444,14 +401,16 @@ class EMR_STRETCHBLT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_STRETCHBLT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BitBltRasterOperation', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'BitBltRasterOperation', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -459,32 +418,32 @@ class EMR_STRETCHBLT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_STRETCHDIBITS:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_STRETCHDIBITS"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'UsageSrc', 'BitBltRasterOperation', 'cxDest', 'cyDest'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'UsageSrc', 'BitBltRasterOperation', 'cxDest', 'cyDest']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -501,18 +460,8 @@ class EMR_STRETCHDIBITS:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -521,14 +470,16 @@ class EMR_STRETCHDIBITS:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_STRETCHDIBITS {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'UsageSrc', 'BitBltRasterOperation', 'cxDest', 'cyDest']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'xSrc', 'ySrc', 'cxSrc', 'cySrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'UsageSrc', 'BitBltRasterOperation', 'cxDest', 'cyDest'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -536,32 +487,32 @@ class EMR_STRETCHDIBITS:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_TRANSPARENTBLT:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '24b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_TRANSPARENTBLT"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'TransparentColor', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'TransparentColor', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -578,18 +529,8 @@ class EMR_TRANSPARENTBLT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -598,14 +539,16 @@ class EMR_TRANSPARENTBLT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_TRANSPARENTBLT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'TransparentColor', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'xDest', 'yDest', 'cxDest', 'cyDest', 'TransparentColor', 'xSrc', 'ySrc', 'XformSrc', 'BkColorSrc', 'UsageSrc', 'offBmiSrc', 'cbBmiSrc', 'offBitsSrc', 'cbBitsSrc', 'cxSrc', 'cySrc'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -613,32 +556,32 @@ class EMR_TRANSPARENTBLT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_EXCLUDECLIPRECT:
+class ParsedHeader:
     format = ['4b', '4b', '16b']
-    name = "EMR_EXCLUDECLIPRECT"
-    has_variable = False
-    fields = ['Type', 'Size', 'Clip'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Clip']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -655,18 +598,8 @@ class EMR_EXCLUDECLIPRECT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -675,14 +608,16 @@ class EMR_EXCLUDECLIPRECT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_EXCLUDECLIPRECT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Clip']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Clip'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -690,32 +625,32 @@ class EMR_EXCLUDECLIPRECT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_EXTSELECTCLIPRGN:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b']
-    name = "EMR_EXTSELECTCLIPRGN"
-    has_variable = True
-    fields = ['Type', 'Size', 'RgnDataSize', 'RegionMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'RgnDataSize', 'RegionMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -732,18 +667,8 @@ class EMR_EXTSELECTCLIPRGN:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -752,14 +677,16 @@ class EMR_EXTSELECTCLIPRGN:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_EXTSELECTCLIPRGN {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'RgnDataSize', 'RegionMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'RgnDataSize', 'RegionMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -767,32 +694,32 @@ class EMR_EXTSELECTCLIPRGN:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_INTERSECTCLIPRECT:
+class ParsedHeader:
     format = ['4b', '4b', '16b']
-    name = "EMR_INTERSECTCLIPRECT"
-    has_variable = False
-    fields = ['Type', 'Size', 'Clip'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Clip']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -809,18 +736,8 @@ class EMR_INTERSECTCLIPRECT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -829,14 +746,16 @@ class EMR_INTERSECTCLIPRECT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_INTERSECTCLIPRECT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Clip']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Clip'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -844,32 +763,32 @@ class EMR_INTERSECTCLIPRECT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_OFFSETCLIPRGN:
+class ParsedHeader:
     format = ['4b', '4b', '8b']
-    name = "EMR_OFFSETCLIPRGN"
-    has_variable = False
-    fields = ['Type', 'Size', 'Offset'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Offset']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -886,18 +805,8 @@ class EMR_OFFSETCLIPRGN:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -906,14 +815,16 @@ class EMR_OFFSETCLIPRGN:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_OFFSETCLIPRGN {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Offset']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Offset'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -921,32 +832,32 @@ class EMR_OFFSETCLIPRGN:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SELECTCLIPPATH:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SELECTCLIPPATH"
-    has_variable = True
-    fields = ['Type', 'Size', 'RegionMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'RegionMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -963,18 +874,8 @@ class EMR_SELECTCLIPPATH:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -983,14 +884,16 @@ class EMR_SELECTCLIPPATH:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SELECTCLIPPATH {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'RegionMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'RegionMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -998,33 +901,32 @@ class EMR_SELECTCLIPPATH:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_COMMENT:
+class ParsedHeader:
     format = ['4b', '4b']
-    name = "EMR_COMMENT"
-    has_variable = True
-    fields = ['Type', 'Size'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
-        print("Here is the data in EMR_COMMENT: "+str(data))
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1040,20 +942,9 @@ class EMR_COMMENT:
                 value = to_unsigned(value)
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
-        print("Here is the remaining data: "+str(data[struct.calcsize("".join(self.format)):]))
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1062,14 +953,16 @@ class EMR_COMMENT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_COMMENT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1077,38 +970,32 @@ class EMR_COMMENT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        print("Here is the data without the variable shit: "+str(out))
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        print("Here is the variable data: "+str(self.variable_data))
-        print("Length of the variable data: "+str(len(self.variable_data)))
-        print("Here is the Size: "+str(self.Size))
-
-
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size[1] == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_COMMENT_EMFPLUS:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_COMMENT_EMFPLUS"
-    has_variable = True
-    fields = ['Type', 'Size', 'CommentIdentifier'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'CommentIdentifier']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1125,18 +1012,8 @@ class EMR_COMMENT_EMFPLUS:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1145,14 +1022,16 @@ class EMR_COMMENT_EMFPLUS:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_COMMENT_EMFPLUS {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'CommentIdentifier']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'CommentIdentifier'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1160,32 +1039,32 @@ class EMR_COMMENT_EMFPLUS:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_COMMENT_EMFSPOOL:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b']
-    name = "EMR_COMMENT_EMFSPOOL"
-    has_variable = True
-    fields = ['Type', 'Size', 'CommentIdentifier', 'EMFSpoolRecordIdentifier'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'CommentIdentifier', 'EMFSpoolRecordIdentifier']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1202,18 +1081,8 @@ class EMR_COMMENT_EMFSPOOL:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1222,14 +1091,16 @@ class EMR_COMMENT_EMFSPOOL:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_COMMENT_EMFSPOOL {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'CommentIdentifier', 'EMFSpoolRecordIdentifier']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'CommentIdentifier', 'EMFSpoolRecordIdentifier'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1237,32 +1108,32 @@ class EMR_COMMENT_EMFSPOOL:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_EOF:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b']
-    name = "EMR_EOF"
-    has_variable = True
-    fields = ['Type', 'Size', 'nPalEntries', 'offPalEntries', 'SizeLast'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'nPalEntries', 'offPalEntries', 'SizeLast']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1279,18 +1150,8 @@ class EMR_EOF:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1299,14 +1160,16 @@ class EMR_EOF:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_EOF {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'nPalEntries', 'offPalEntries', 'SizeLast']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'nPalEntries', 'offPalEntries', 'SizeLast'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1314,32 +1177,32 @@ class EMR_EOF:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_ANGLEARC:
+class ParsedHeader:
     format = ['4b', '4b', '8b', '4b', '4b', '4b']
-    name = "EMR_ANGLEARC"
-    has_variable = False
-    fields = ['Type', 'Size', 'Center', 'Radius', 'StartAngle', 'SweepAngle'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Center', 'Radius', 'StartAngle', 'SweepAngle']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1356,18 +1219,8 @@ class EMR_ANGLEARC:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1376,14 +1229,16 @@ class EMR_ANGLEARC:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_ANGLEARC {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Center', 'Radius', 'StartAngle', 'SweepAngle']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Center', 'Radius', 'StartAngle', 'SweepAngle'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1391,32 +1246,32 @@ class EMR_ANGLEARC:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_ARC:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '8b', '8b']
-    name = "EMR_ARC"
-    has_variable = False
-    fields = ['Type', 'Size', 'Box', 'Start', 'End'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Box', 'Start', 'End']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1433,18 +1288,8 @@ class EMR_ARC:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1453,14 +1298,16 @@ class EMR_ARC:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_ARC {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Box', 'Start', 'End']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Box', 'Start', 'End'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1468,32 +1315,32 @@ class EMR_ARC:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_ARCTO:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '8b', '8b']
-    name = "EMR_ARCTO"
-    has_variable = False
-    fields = ['Type', 'Size', 'Box', 'Start', 'End'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Box', 'Start', 'End']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1510,18 +1357,8 @@ class EMR_ARCTO:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1530,14 +1367,16 @@ class EMR_ARCTO:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_ARCTO {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Box', 'Start', 'End']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Box', 'Start', 'End'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1545,32 +1384,32 @@ class EMR_ARCTO:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_CHORD:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '8b', '8b']
-    name = "EMR_CHORD"
-    has_variable = False
-    fields = ['Type', 'Size', 'Box', 'Start', 'End'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Box', 'Start', 'End']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1587,18 +1426,8 @@ class EMR_CHORD:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1607,14 +1436,16 @@ class EMR_CHORD:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_CHORD {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Box', 'Start', 'End']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Box', 'Start', 'End'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1622,32 +1453,32 @@ class EMR_CHORD:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_ELLIPSE:
+class ParsedHeader:
     format = ['4b', '4b', '16b']
-    name = "EMR_ELLIPSE"
-    has_variable = False
-    fields = ['Type', 'Size', 'Box'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Box']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1664,18 +1495,8 @@ class EMR_ELLIPSE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1684,14 +1505,16 @@ class EMR_ELLIPSE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_ELLIPSE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Box']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Box'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1699,32 +1522,32 @@ class EMR_ELLIPSE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_EXTFLOODFILL:
+class ParsedHeader:
     format = ['4b', '4b', '8b', '4b', '4b']
-    name = "EMR_EXTFLOODFILL"
-    has_variable = False
-    fields = ['Type', 'Size', 'Start', 'Color', 'FloodFillMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Start', 'Color', 'FloodFillMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1741,18 +1564,8 @@ class EMR_EXTFLOODFILL:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1761,14 +1574,16 @@ class EMR_EXTFLOODFILL:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_EXTFLOODFILL {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Start', 'Color', 'FloodFillMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Start', 'Color', 'FloodFillMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1776,32 +1591,32 @@ class EMR_EXTFLOODFILL:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_EXTTEXTOUTA:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b']
-    name = "EMR_EXTTEXTOUTA"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1818,18 +1633,8 @@ class EMR_EXTTEXTOUTA:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1838,14 +1643,16 @@ class EMR_EXTTEXTOUTA:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_EXTTEXTOUTA {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1853,32 +1660,32 @@ class EMR_EXTTEXTOUTA:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_EXTTEXTOUTW:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b']
-    name = "EMR_EXTTEXTOUTW"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1895,18 +1702,8 @@ class EMR_EXTTEXTOUTW:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1915,14 +1712,16 @@ class EMR_EXTTEXTOUTW:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_EXTTEXTOUTW {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -1930,32 +1729,32 @@ class EMR_EXTTEXTOUTW:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_FILLPATH:
+class ParsedHeader:
     format = ['4b', '4b', '16b']
-    name = "EMR_FILLPATH"
-    has_variable = False
-    fields = ['Type', 'Size', 'Bounds'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -1972,18 +1771,8 @@ class EMR_FILLPATH:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -1992,14 +1781,16 @@ class EMR_FILLPATH:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_FILLPATH {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2007,32 +1798,32 @@ class EMR_FILLPATH:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_FILLRGN:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b']
-    name = "EMR_FILLRGN"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'RgnDataSize', 'ihBrush'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize', 'ihBrush']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2049,18 +1840,8 @@ class EMR_FILLRGN:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2069,14 +1850,16 @@ class EMR_FILLRGN:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_FILLRGN {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize', 'ihBrush']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize', 'ihBrush'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2084,32 +1867,32 @@ class EMR_FILLRGN:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_FRAMERGN:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b']
-    name = "EMR_FRAMERGN"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'RgnDataSize', 'ihBrush', 'Width', 'Height'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize', 'ihBrush', 'Width', 'Height']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2126,18 +1909,8 @@ class EMR_FRAMERGN:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2146,14 +1919,16 @@ class EMR_FRAMERGN:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_FRAMERGN {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize', 'ihBrush', 'Width', 'Height']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize', 'ihBrush', 'Width', 'Height'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2161,32 +1936,32 @@ class EMR_FRAMERGN:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_GRADIENTFILL:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b']
-    name = "EMR_GRADIENTFILL"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'nVer', 'nTri', 'ulMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'nVer', 'nTri', 'ulMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2203,18 +1978,8 @@ class EMR_GRADIENTFILL:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2223,14 +1988,16 @@ class EMR_GRADIENTFILL:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_GRADIENTFILL {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'nVer', 'nTri', 'ulMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'nVer', 'nTri', 'ulMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2238,32 +2005,32 @@ class EMR_GRADIENTFILL:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_LINETO:
+class ParsedHeader:
     format = ['4b', '4b', '8b']
-    name = "EMR_LINETO"
-    has_variable = False
-    fields = ['Type', 'Size', 'Point'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Point']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2280,18 +2047,8 @@ class EMR_LINETO:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2300,14 +2057,16 @@ class EMR_LINETO:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_LINETO {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Point']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Point'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2315,32 +2074,32 @@ class EMR_LINETO:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_PAINTRGN:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_PAINTRGN"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'RgnDataSize'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2357,18 +2116,8 @@ class EMR_PAINTRGN:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2377,14 +2126,16 @@ class EMR_PAINTRGN:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_PAINTRGN {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2392,32 +2143,32 @@ class EMR_PAINTRGN:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_PIE:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '8b', '8b']
-    name = "EMR_PIE"
-    has_variable = False
-    fields = ['Type', 'Size', 'Box', 'Start', 'End'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Box', 'Start', 'End']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2434,18 +2185,8 @@ class EMR_PIE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2454,14 +2195,16 @@ class EMR_PIE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_PIE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Box', 'Start', 'End']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Box', 'Start', 'End'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2469,32 +2212,32 @@ class EMR_PIE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYBEZIER:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYBEZIER"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2511,18 +2254,8 @@ class EMR_POLYBEZIER:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2531,14 +2264,16 @@ class EMR_POLYBEZIER:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYBEZIER {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2546,32 +2281,32 @@ class EMR_POLYBEZIER:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYBEZIER16:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYBEZIER16"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2588,18 +2323,8 @@ class EMR_POLYBEZIER16:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2608,14 +2333,16 @@ class EMR_POLYBEZIER16:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYBEZIER16 {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2623,32 +2350,32 @@ class EMR_POLYBEZIER16:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYBEZIERTO:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYBEZIERTO"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2665,18 +2392,8 @@ class EMR_POLYBEZIERTO:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2685,14 +2402,16 @@ class EMR_POLYBEZIERTO:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYBEZIERTO {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2700,32 +2419,32 @@ class EMR_POLYBEZIERTO:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYBEZIERTO16:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYBEZIERTO16"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2742,18 +2461,8 @@ class EMR_POLYBEZIERTO16:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2762,14 +2471,16 @@ class EMR_POLYBEZIERTO16:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYBEZIERTO16 {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2777,32 +2488,32 @@ class EMR_POLYBEZIERTO16:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYDRAW:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYDRAW"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2819,18 +2530,8 @@ class EMR_POLYDRAW:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2839,14 +2540,16 @@ class EMR_POLYDRAW:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYDRAW {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2854,32 +2557,32 @@ class EMR_POLYDRAW:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYDRAW16:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYDRAW16"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2896,18 +2599,8 @@ class EMR_POLYDRAW16:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2916,14 +2609,16 @@ class EMR_POLYDRAW16:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYDRAW16 {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -2931,32 +2626,32 @@ class EMR_POLYDRAW16:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYGON:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYGON"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -2973,18 +2668,8 @@ class EMR_POLYGON:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -2993,14 +2678,16 @@ class EMR_POLYGON:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYGON {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3008,32 +2695,32 @@ class EMR_POLYGON:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYGON16:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYGON16"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3050,18 +2737,8 @@ class EMR_POLYGON16:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3070,14 +2747,16 @@ class EMR_POLYGON16:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYGON16 {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3085,32 +2764,32 @@ class EMR_POLYGON16:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYLINE:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYLINE"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3127,18 +2806,8 @@ class EMR_POLYLINE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3147,14 +2816,16 @@ class EMR_POLYLINE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYLINE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3162,32 +2833,32 @@ class EMR_POLYLINE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYLINE16:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYLINE16"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3204,18 +2875,8 @@ class EMR_POLYLINE16:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3224,14 +2885,16 @@ class EMR_POLYLINE16:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYLINE16 {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3239,32 +2902,32 @@ class EMR_POLYLINE16:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYLINETO:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYLINETO"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3281,18 +2944,8 @@ class EMR_POLYLINETO:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3301,14 +2954,16 @@ class EMR_POLYLINETO:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYLINETO {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3316,32 +2971,32 @@ class EMR_POLYLINETO:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYLINETO16:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_POLYLINETO16"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3358,18 +3013,8 @@ class EMR_POLYLINETO16:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3378,14 +3023,16 @@ class EMR_POLYLINETO16:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYLINETO16 {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3393,32 +3040,32 @@ class EMR_POLYLINETO16:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYPOLYGON:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b']
-    name = "EMR_POLYPOLYGON"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'NumberOfPolygons', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolygons', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3435,18 +3082,8 @@ class EMR_POLYPOLYGON:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3455,14 +3092,16 @@ class EMR_POLYPOLYGON:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYPOLYGON {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolygons', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolygons', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3470,32 +3109,32 @@ class EMR_POLYPOLYGON:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYPOLYGON16:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b']
-    name = "EMR_POLYPOLYGON16"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'NumberOfPolygons', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolygons', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3512,18 +3151,8 @@ class EMR_POLYPOLYGON16:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3532,14 +3161,16 @@ class EMR_POLYPOLYGON16:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYPOLYGON16 {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolygons', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolygons', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3547,32 +3178,32 @@ class EMR_POLYPOLYGON16:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYPOLYLINE:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b']
-    name = "EMR_POLYPOLYLINE"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'NumberOfPolylines', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolylines', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3589,18 +3220,8 @@ class EMR_POLYPOLYLINE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3609,14 +3230,16 @@ class EMR_POLYPOLYLINE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYPOLYLINE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolylines', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolylines', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3624,32 +3247,32 @@ class EMR_POLYPOLYLINE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYPOLYLINE16:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b']
-    name = "EMR_POLYPOLYLINE16"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'NumberOfPolylines', 'Count'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolylines', 'Count']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3666,18 +3289,8 @@ class EMR_POLYPOLYLINE16:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3686,14 +3299,16 @@ class EMR_POLYPOLYLINE16:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYPOLYLINE16 {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolylines', 'Count']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'NumberOfPolylines', 'Count'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3701,32 +3316,32 @@ class EMR_POLYPOLYLINE16:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYTEXTOUTA:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b']
-    name = "EMR_POLYTEXTOUTA"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale', 'cStrings'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale', 'cStrings']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3743,18 +3358,8 @@ class EMR_POLYTEXTOUTA:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3763,14 +3368,16 @@ class EMR_POLYTEXTOUTA:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYTEXTOUTA {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale', 'cStrings']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale', 'cStrings'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3778,32 +3385,32 @@ class EMR_POLYTEXTOUTA:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_POLYTEXTOUTW:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b', '4b', '4b', '4b']
-    name = "EMR_POLYTEXTOUTW"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale', 'cStrings'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale', 'cStrings']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3820,18 +3427,8 @@ class EMR_POLYTEXTOUTW:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3840,14 +3437,16 @@ class EMR_POLYTEXTOUTW:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_POLYTEXTOUTW {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale', 'cStrings']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'iGraphicsMode', 'exScale', 'eyScale', 'cStrings'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3855,32 +3454,32 @@ class EMR_POLYTEXTOUTW:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_RECTANGLE:
+class ParsedHeader:
     format = ['4b', '4b', '16b']
-    name = "EMR_RECTANGLE"
-    has_variable = False
-    fields = ['Type', 'Size', 'Box'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Box']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3897,18 +3496,8 @@ class EMR_RECTANGLE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3917,14 +3506,16 @@ class EMR_RECTANGLE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_RECTANGLE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Box']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Box'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -3932,32 +3523,32 @@ class EMR_RECTANGLE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_ROUNDRECT:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '8b']
-    name = "EMR_ROUNDRECT"
-    has_variable = False
-    fields = ['Type', 'Size', 'Box', 'Corner'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Box', 'Corner']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -3974,18 +3565,8 @@ class EMR_ROUNDRECT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -3994,14 +3575,16 @@ class EMR_ROUNDRECT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_ROUNDRECT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Box', 'Corner']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Box', 'Corner'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4009,32 +3592,32 @@ class EMR_ROUNDRECT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETPIXELV:
+class ParsedHeader:
     format = ['4b', '4b', '8b', '4b']
-    name = "EMR_SETPIXELV"
-    has_variable = False
-    fields = ['Type', 'Size', 'Pixel', 'Color'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Pixel', 'Color']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4051,18 +3634,8 @@ class EMR_SETPIXELV:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4071,14 +3644,16 @@ class EMR_SETPIXELV:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETPIXELV {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Pixel', 'Color']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Pixel', 'Color'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4086,32 +3661,32 @@ class EMR_SETPIXELV:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SMALLTEXTOUT:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_SMALLTEXTOUT"
-    has_variable = True
-    fields = ['Type', 'Size', 'x', 'y', 'cChars', 'fuOptions', 'iGraphicsMode', 'exScale', 'eyScale'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'x', 'y', 'cChars', 'fuOptions', 'iGraphicsMode', 'exScale', 'eyScale']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4128,18 +3703,8 @@ class EMR_SMALLTEXTOUT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4148,14 +3713,16 @@ class EMR_SMALLTEXTOUT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SMALLTEXTOUT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'x', 'y', 'cChars', 'fuOptions', 'iGraphicsMode', 'exScale', 'eyScale']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'x', 'y', 'cChars', 'fuOptions', 'iGraphicsMode', 'exScale', 'eyScale'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4163,32 +3730,32 @@ class EMR_SMALLTEXTOUT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_STROKEANDFILLPATH:
+class ParsedHeader:
     format = ['4b', '4b', '16b']
-    name = "EMR_STROKEANDFILLPATH"
-    has_variable = False
-    fields = ['Type', 'Size', 'Bounds'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4205,18 +3772,8 @@ class EMR_STROKEANDFILLPATH:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4225,14 +3782,16 @@ class EMR_STROKEANDFILLPATH:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_STROKEANDFILLPATH {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4240,32 +3799,32 @@ class EMR_STROKEANDFILLPATH:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_STROKEPATH:
+class ParsedHeader:
     format = ['4b', '4b', '16b']
-    name = "EMR_STROKEPATH"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4282,18 +3841,8 @@ class EMR_STROKEPATH:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4302,14 +3851,16 @@ class EMR_STROKEPATH:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_STROKEPATH {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4317,32 +3868,32 @@ class EMR_STROKEPATH:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_DRAWESCAPE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_DRAWESCAPE"
-    has_variable = True
-    fields = ['Type', 'Size', 'cjIn'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'cjIn']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4359,18 +3910,8 @@ class EMR_DRAWESCAPE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4379,14 +3920,16 @@ class EMR_DRAWESCAPE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_DRAWESCAPE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'cjIn']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'cjIn'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4394,32 +3937,32 @@ class EMR_DRAWESCAPE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_EXTESCAPE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_EXTESCAPE"
-    has_variable = True
-    fields = ['Type', 'Size', 'cjIn'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'cjIn']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4436,18 +3979,8 @@ class EMR_EXTESCAPE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4456,14 +3989,16 @@ class EMR_EXTESCAPE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_EXTESCAPE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'cjIn']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'cjIn'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4471,32 +4006,32 @@ class EMR_EXTESCAPE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_NAMEDESCAPE:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b']
-    name = "EMR_NAMEDESCAPE"
-    has_variable = True
-    fields = ['Type', 'Size', 'cjDriver', 'cjIn'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'cjDriver', 'cjIn']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4513,18 +4048,8 @@ class EMR_NAMEDESCAPE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4533,14 +4058,16 @@ class EMR_NAMEDESCAPE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_NAMEDESCAPE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'cjDriver', 'cjIn']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'cjDriver', 'cjIn'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4548,32 +4075,32 @@ class EMR_NAMEDESCAPE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_CREATEBRUSHINDIRECT:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '12b']
-    name = "EMR_CREATEBRUSHINDIRECT"
-    has_variable = False
-    fields = ['Type', 'Size', 'ihBrush', 'LogBrush'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihBrush', 'LogBrush']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4590,18 +4117,8 @@ class EMR_CREATEBRUSHINDIRECT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4610,14 +4127,16 @@ class EMR_CREATEBRUSHINDIRECT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_CREATEBRUSHINDIRECT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihBrush', 'LogBrush']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihBrush', 'LogBrush'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4625,32 +4144,32 @@ class EMR_CREATEBRUSHINDIRECT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_CREATECOLORSPACE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_CREATECOLORSPACE"
-    has_variable = True
-    fields = ['Type', 'Size', 'ihCS'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihCS']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4667,18 +4186,8 @@ class EMR_CREATECOLORSPACE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4687,14 +4196,16 @@ class EMR_CREATECOLORSPACE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_CREATECOLORSPACE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihCS']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihCS'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4702,32 +4213,32 @@ class EMR_CREATECOLORSPACE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_CREATECOLORSPACEW:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b']
-    name = "EMR_CREATECOLORSPACEW"
-    has_variable = True
-    fields = ['Type', 'Size', 'ihCS', 'dwFlags', 'cbData'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihCS', 'dwFlags', 'cbData']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4744,18 +4255,8 @@ class EMR_CREATECOLORSPACEW:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4764,14 +4265,16 @@ class EMR_CREATECOLORSPACEW:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_CREATECOLORSPACEW {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihCS', 'dwFlags', 'cbData']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihCS', 'dwFlags', 'cbData'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4779,32 +4282,32 @@ class EMR_CREATECOLORSPACEW:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_CREATEDIBPATTERNBRUSHPT:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_CREATEDIBPATTERNBRUSHPT"
-    has_variable = True
-    fields = ['Type', 'Size', 'ihBrush', 'Usage', 'offBmi', 'cbBmi', 'offBits', 'cbBits'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihBrush', 'Usage', 'offBmi', 'cbBmi', 'offBits', 'cbBits']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4821,18 +4324,8 @@ class EMR_CREATEDIBPATTERNBRUSHPT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4841,14 +4334,16 @@ class EMR_CREATEDIBPATTERNBRUSHPT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_CREATEDIBPATTERNBRUSHPT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihBrush', 'Usage', 'offBmi', 'cbBmi', 'offBits', 'cbBits']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihBrush', 'Usage', 'offBmi', 'cbBmi', 'offBits', 'cbBits'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4856,32 +4351,32 @@ class EMR_CREATEDIBPATTERNBRUSHPT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_CREATEMONOBRUSH:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_CREATEMONOBRUSH"
-    has_variable = True
-    fields = ['Type', 'Size', 'ihBrush', 'Usage', 'offBmi', 'cbBmi', 'offBits', 'cbBits'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihBrush', 'Usage', 'offBmi', 'cbBmi', 'offBits', 'cbBits']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4898,18 +4393,8 @@ class EMR_CREATEMONOBRUSH:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4918,14 +4403,16 @@ class EMR_CREATEMONOBRUSH:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_CREATEMONOBRUSH {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihBrush', 'Usage', 'offBmi', 'cbBmi', 'offBits', 'cbBits']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihBrush', 'Usage', 'offBmi', 'cbBmi', 'offBits', 'cbBits'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -4933,32 +4420,32 @@ class EMR_CREATEMONOBRUSH:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_CREATEPALETTE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_CREATEPALETTE"
-    has_variable = True
-    fields = ['Type', 'Size', 'ihPal'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihPal']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -4975,18 +4462,8 @@ class EMR_CREATEPALETTE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -4995,14 +4472,16 @@ class EMR_CREATEPALETTE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_CREATEPALETTE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihPal']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihPal'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5010,32 +4489,32 @@ class EMR_CREATEPALETTE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_CREATEPEN:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '16b']
-    name = "EMR_CREATEPEN"
-    has_variable = False
-    fields = ['Type', 'Size', 'ihPen', 'LogPen'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihPen', 'LogPen']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5052,18 +4531,8 @@ class EMR_CREATEPEN:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5072,14 +4541,16 @@ class EMR_CREATEPEN:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_CREATEPEN {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihPen', 'LogPen']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihPen', 'LogPen'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5087,32 +4558,32 @@ class EMR_CREATEPEN:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_EXTCREATEFONTINDIRECTW:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_EXTCREATEFONTINDIRECTW"
-    has_variable = True
-    fields = ['Type', 'Size', 'ihFonts'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihFonts']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5129,18 +4600,8 @@ class EMR_EXTCREATEFONTINDIRECTW:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5149,14 +4610,16 @@ class EMR_EXTCREATEFONTINDIRECTW:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_EXTCREATEFONTINDIRECTW {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihFonts']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihFonts'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5164,32 +4627,32 @@ class EMR_EXTCREATEFONTINDIRECTW:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_EXTCREATEPEN:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_EXTCREATEPEN"
-    has_variable = True
-    fields = ['Type', 'Size', 'ihPen', 'offBmi', 'cbBmi', 'offBits', 'cbBits'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihPen', 'offBmi', 'cbBmi', 'offBits', 'cbBits']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5206,18 +4669,8 @@ class EMR_EXTCREATEPEN:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5226,14 +4679,16 @@ class EMR_EXTCREATEPEN:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_EXTCREATEPEN {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihPen', 'offBmi', 'cbBmi', 'offBits', 'cbBits']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihPen', 'offBmi', 'cbBmi', 'offBits', 'cbBits'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5241,32 +4696,32 @@ class EMR_EXTCREATEPEN:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_COLORCORRECTPALETTE:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_COLORCORRECTPALETTE"
-    has_variable = False
-    fields = ['Type', 'Size', 'ihPalette', 'nFirstEntry', 'nPalEntries', 'nReserved'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihPalette', 'nFirstEntry', 'nPalEntries', 'nReserved']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5283,18 +4738,8 @@ class EMR_COLORCORRECTPALETTE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5303,14 +4748,16 @@ class EMR_COLORCORRECTPALETTE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_COLORCORRECTPALETTE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihPalette', 'nFirstEntry', 'nPalEntries', 'nReserved']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihPalette', 'nFirstEntry', 'nPalEntries', 'nReserved'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5318,32 +4765,32 @@ class EMR_COLORCORRECTPALETTE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_DELETECOLORSPACE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_DELETECOLORSPACE"
-    has_variable = False
-    fields = ['Type', 'Size', 'ihCS'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihCS']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5360,18 +4807,8 @@ class EMR_DELETECOLORSPACE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5380,14 +4817,16 @@ class EMR_DELETECOLORSPACE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_DELETECOLORSPACE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihCS']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihCS'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5395,32 +4834,32 @@ class EMR_DELETECOLORSPACE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_DELETEOBJECT:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_DELETEOBJECT"
-    has_variable = False
-    fields = ['Type', 'Size', 'ihObject'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihObject']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5437,18 +4876,8 @@ class EMR_DELETEOBJECT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5457,14 +4886,16 @@ class EMR_DELETEOBJECT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_DELETEOBJECT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihObject']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihObject'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5472,32 +4903,32 @@ class EMR_DELETEOBJECT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_RESIZEPALETTE:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b']
-    name = "EMR_RESIZEPALETTE"
-    has_variable = False
-    fields = ['Type', 'Size', 'ihPal', 'NumberOfEntries'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihPal', 'NumberOfEntries']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5514,18 +4945,8 @@ class EMR_RESIZEPALETTE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5534,14 +4955,16 @@ class EMR_RESIZEPALETTE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_RESIZEPALETTE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihPal', 'NumberOfEntries']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihPal', 'NumberOfEntries'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5549,32 +4972,32 @@ class EMR_RESIZEPALETTE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SELECTOBJECT:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SELECTOBJECT"
-    has_variable = False
-    fields = ['Type', 'Size', 'ihObject'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihObject']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5591,18 +5014,8 @@ class EMR_SELECTOBJECT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5611,14 +5024,16 @@ class EMR_SELECTOBJECT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SELECTOBJECT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihObject']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihObject'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5626,32 +5041,32 @@ class EMR_SELECTOBJECT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SELECTPALETTE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SELECTPALETTE"
-    has_variable = False
-    fields = ['Type', 'Size', 'ihPal'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihPal']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5668,18 +5083,8 @@ class EMR_SELECTPALETTE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5688,14 +5093,16 @@ class EMR_SELECTPALETTE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SELECTPALETTE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihPal']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihPal'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5703,32 +5110,32 @@ class EMR_SELECTPALETTE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETCOLORSPACE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETCOLORSPACE"
-    has_variable = False
-    fields = ['Type', 'Size', 'ihCS'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihCS']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5745,18 +5152,8 @@ class EMR_SETCOLORSPACE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5765,14 +5162,16 @@ class EMR_SETCOLORSPACE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETCOLORSPACE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihCS']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihCS'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5780,32 +5179,32 @@ class EMR_SETCOLORSPACE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETPALETTEENTRIES:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b']
-    name = "EMR_SETPALETTEENTRIES"
-    has_variable = True
-    fields = ['Type', 'Size', 'ihPal', 'Start', 'NumberofEntries'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ihPal', 'Start', 'NumberofEntries']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5822,18 +5221,8 @@ class EMR_SETPALETTEENTRIES:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5842,14 +5231,16 @@ class EMR_SETPALETTEENTRIES:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETPALETTEENTRIES {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ihPal', 'Start', 'NumberofEntries']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ihPal', 'Start', 'NumberofEntries'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5857,32 +5248,32 @@ class EMR_SETPALETTEENTRIES:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_GLSBOUNDEDRECORD:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_GLSBOUNDEDRECORD"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'cbData'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'cbData']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5899,18 +5290,8 @@ class EMR_GLSBOUNDEDRECORD:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5919,14 +5300,16 @@ class EMR_GLSBOUNDEDRECORD:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_GLSBOUNDEDRECORD {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'cbData']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'cbData'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -5934,32 +5317,32 @@ class EMR_GLSBOUNDEDRECORD:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_GLSRECORD:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_GLSRECORD"
-    has_variable = True
-    fields = ['Type', 'Size', 'cbData'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'cbData']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -5976,18 +5359,8 @@ class EMR_GLSRECORD:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -5996,14 +5369,16 @@ class EMR_GLSRECORD:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_GLSRECORD {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'cbData']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'cbData'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6011,32 +5386,32 @@ class EMR_GLSRECORD:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_COLORMATCHTOTARGETW:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_COLORMATCHTOTARGETW"
-    has_variable = True
-    fields = ['Type', 'Size', 'dwAction', 'dwFlags', 'cbName', 'cbData'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'dwAction', 'dwFlags', 'cbName', 'cbData']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6053,18 +5428,8 @@ class EMR_COLORMATCHTOTARGETW:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6073,14 +5438,16 @@ class EMR_COLORMATCHTOTARGETW:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_COLORMATCHTOTARGETW {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'dwAction', 'dwFlags', 'cbName', 'cbData']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'dwAction', 'dwFlags', 'cbName', 'cbData'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6088,32 +5455,32 @@ class EMR_COLORMATCHTOTARGETW:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_FORCEUFIMAPPING:
+class ParsedHeader:
     format = ['4b', '4b', '8b']
-    name = "EMR_FORCEUFIMAPPING"
-    has_variable = False
-    fields = ['Type', 'Size', 'ufi'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ufi']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6130,18 +5497,8 @@ class EMR_FORCEUFIMAPPING:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6150,14 +5507,16 @@ class EMR_FORCEUFIMAPPING:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_FORCEUFIMAPPING {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ufi']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ufi'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6165,32 +5524,32 @@ class EMR_FORCEUFIMAPPING:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_INVERTRGN:
+class ParsedHeader:
     format = ['4b', '4b', '16b', '4b']
-    name = "EMR_INVERTRGN"
-    has_variable = True
-    fields = ['Type', 'Size', 'Bounds', 'RgnDataSize'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6207,18 +5566,8 @@ class EMR_INVERTRGN:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6227,14 +5576,16 @@ class EMR_INVERTRGN:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_INVERTRGN {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Bounds', 'RgnDataSize'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6242,32 +5593,32 @@ class EMR_INVERTRGN:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_MOVETOEX:
+class ParsedHeader:
     format = ['4b', '4b', '8b']
-    name = "EMR_MOVETOEX"
-    has_variable = False
-    fields = ['Type', 'Size', 'Offset'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Offset']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6284,18 +5635,8 @@ class EMR_MOVETOEX:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6304,14 +5645,16 @@ class EMR_MOVETOEX:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_MOVETOEX {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Offset']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Offset'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6319,32 +5662,32 @@ class EMR_MOVETOEX:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_PIXELFORMAT:
+class ParsedHeader:
     format = ['4b', '4b', '40b']
-    name = "EMR_PIXELFORMAT"
-    has_variable = False
-    fields = ['Type', 'Size', 'pfd'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'pfd']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6361,18 +5704,8 @@ class EMR_PIXELFORMAT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6381,14 +5714,16 @@ class EMR_PIXELFORMAT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_PIXELFORMAT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'pfd']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'pfd'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6396,32 +5731,32 @@ class EMR_PIXELFORMAT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_RESTOREDC:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_RESTOREDC"
-    has_variable = False
-    fields = ['Type', 'Size', 'SavedDC'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'SavedDC']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6438,18 +5773,8 @@ class EMR_RESTOREDC:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6458,14 +5783,16 @@ class EMR_RESTOREDC:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_RESTOREDC {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'SavedDC']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'SavedDC'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6473,32 +5800,32 @@ class EMR_RESTOREDC:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SCALEVIEWPORTEXTEX:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_SCALEVIEWPORTEXTEX"
-    has_variable = False
-    fields = ['Type', 'Size', 'xNum', 'xDenom', 'yNum', 'yDenom'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'xNum', 'xDenom', 'yNum', 'yDenom']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6515,18 +5842,8 @@ class EMR_SCALEVIEWPORTEXTEX:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6535,14 +5852,16 @@ class EMR_SCALEVIEWPORTEXTEX:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SCALEVIEWPORTEXTEX {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'xNum', 'xDenom', 'yNum', 'yDenom']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'xNum', 'xDenom', 'yNum', 'yDenom'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6550,32 +5869,32 @@ class EMR_SCALEVIEWPORTEXTEX:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SCALEWINDOWEXTEX:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b', '4b']
-    name = "EMR_SCALEWINDOWEXTEX"
-    has_variable = False
-    fields = ['Type', 'Size', 'xNum', 'xDenom', 'yNum', 'yDenom'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'xNum', 'xDenom', 'yNum', 'yDenom']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6592,18 +5911,8 @@ class EMR_SCALEWINDOWEXTEX:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6612,14 +5921,16 @@ class EMR_SCALEWINDOWEXTEX:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SCALEWINDOWEXTEX {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'xNum', 'xDenom', 'yNum', 'yDenom']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'xNum', 'xDenom', 'yNum', 'yDenom'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6627,32 +5938,32 @@ class EMR_SCALEWINDOWEXTEX:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETARCDIRECTION:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETARCDIRECTION"
-    has_variable = False
-    fields = ['Type', 'Size', 'ArcDirection'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ArcDirection']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6669,18 +5980,8 @@ class EMR_SETARCDIRECTION:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6689,14 +5990,16 @@ class EMR_SETARCDIRECTION:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETARCDIRECTION {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ArcDirection']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ArcDirection'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6704,32 +6007,32 @@ class EMR_SETARCDIRECTION:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETBKCOLOR:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETBKCOLOR"
-    has_variable = False
-    fields = ['Type', 'Size', 'Color'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Color']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6746,18 +6049,8 @@ class EMR_SETBKCOLOR:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6766,14 +6059,16 @@ class EMR_SETBKCOLOR:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETBKCOLOR {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Color']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Color'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6781,32 +6076,32 @@ class EMR_SETBKCOLOR:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETBKMODE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETBKMODE"
-    has_variable = False
-    fields = ['Type', 'Size', 'BackgroundMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'BackgroundMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6823,18 +6118,8 @@ class EMR_SETBKMODE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6843,14 +6128,16 @@ class EMR_SETBKMODE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETBKMODE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'BackgroundMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'BackgroundMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6858,32 +6145,32 @@ class EMR_SETBKMODE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETBRUSHORGEX:
+class ParsedHeader:
     format = ['4b', '4b', '8b']
-    name = "EMR_SETBRUSHORGEX"
-    has_variable = False
-    fields = ['Type', 'Size', 'Origin'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Origin']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6900,18 +6187,8 @@ class EMR_SETBRUSHORGEX:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6920,14 +6197,16 @@ class EMR_SETBRUSHORGEX:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETBRUSHORGEX {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Origin']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Origin'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -6935,32 +6214,32 @@ class EMR_SETBRUSHORGEX:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETCOLORADJUSTMENT:
+class ParsedHeader:
     format = ['4b', '4b', '24b']
-    name = "EMR_SETCOLORADJUSTMENT"
-    has_variable = False
-    fields = ['Type', 'Size', 'ColorAdjustment'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ColorAdjustment']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -6977,18 +6256,8 @@ class EMR_SETCOLORADJUSTMENT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -6997,14 +6266,16 @@ class EMR_SETCOLORADJUSTMENT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETCOLORADJUSTMENT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ColorAdjustment']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ColorAdjustment'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7012,32 +6283,32 @@ class EMR_SETCOLORADJUSTMENT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETICMMODE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETICMMODE"
-    has_variable = False
-    fields = ['Type', 'Size', 'ICMMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ICMMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7054,18 +6325,8 @@ class EMR_SETICMMODE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7074,14 +6335,16 @@ class EMR_SETICMMODE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETICMMODE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ICMMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ICMMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7089,32 +6352,32 @@ class EMR_SETICMMODE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETICMPROFILEA:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b']
-    name = "EMR_SETICMPROFILEA"
-    has_variable = True
-    fields = ['Type', 'Size', 'dwFlags', 'cbName', 'cbData'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'dwFlags', 'cbName', 'cbData']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7131,18 +6394,8 @@ class EMR_SETICMPROFILEA:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7151,14 +6404,16 @@ class EMR_SETICMPROFILEA:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETICMPROFILEA {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'dwFlags', 'cbName', 'cbData']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'dwFlags', 'cbName', 'cbData'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7166,32 +6421,32 @@ class EMR_SETICMPROFILEA:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETICMPROFILEW:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b', '4b']
-    name = "EMR_SETICMPROFILEW"
-    has_variable = True
-    fields = ['Type', 'Size', 'dwFlags', 'cbName', 'cbData'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'dwFlags', 'cbName', 'cbData']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7208,18 +6463,8 @@ class EMR_SETICMPROFILEW:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7228,14 +6473,16 @@ class EMR_SETICMPROFILEW:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETICMPROFILEW {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'dwFlags', 'cbName', 'cbData']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'dwFlags', 'cbName', 'cbData'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7243,32 +6490,32 @@ class EMR_SETICMPROFILEW:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETLAYOUT:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETLAYOUT"
-    has_variable = False
-    fields = ['Type', 'Size', 'LayoutMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'LayoutMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7285,18 +6532,8 @@ class EMR_SETLAYOUT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7305,14 +6542,16 @@ class EMR_SETLAYOUT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETLAYOUT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'LayoutMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'LayoutMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7320,32 +6559,32 @@ class EMR_SETLAYOUT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETLINKEDUFIS:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '8b']
-    name = "EMR_SETLINKEDUFIS"
-    has_variable = True
-    fields = ['Type', 'Size', 'uNumLinkedUFI', 'Reserved'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'uNumLinkedUFI', 'Reserved']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7362,18 +6601,8 @@ class EMR_SETLINKEDUFIS:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7382,14 +6611,16 @@ class EMR_SETLINKEDUFIS:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETLINKEDUFIS {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'uNumLinkedUFI', 'Reserved']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'uNumLinkedUFI', 'Reserved'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7397,32 +6628,32 @@ class EMR_SETLINKEDUFIS:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETMAPMODE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETMAPMODE"
-    has_variable = False
-    fields = ['Type', 'Size', 'MapMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'MapMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7439,18 +6670,8 @@ class EMR_SETMAPMODE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7459,14 +6680,16 @@ class EMR_SETMAPMODE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETMAPMODE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'MapMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'MapMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7474,32 +6697,32 @@ class EMR_SETMAPMODE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETMAPPERFLAGS:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETMAPPERFLAGS"
-    has_variable = False
-    fields = ['Type', 'Size', 'Flags'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Flags']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7516,18 +6739,8 @@ class EMR_SETMAPPERFLAGS:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7536,14 +6749,16 @@ class EMR_SETMAPPERFLAGS:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETMAPPERFLAGS {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Flags']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Flags'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7551,32 +6766,32 @@ class EMR_SETMAPPERFLAGS:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETMITERLIMIT:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETMITERLIMIT"
-    has_variable = False
-    fields = ['Type', 'Size', 'MiterLimit'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'MiterLimit']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7593,18 +6808,8 @@ class EMR_SETMITERLIMIT:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7613,14 +6818,16 @@ class EMR_SETMITERLIMIT:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETMITERLIMIT {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'MiterLimit']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'MiterLimit'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7628,32 +6835,32 @@ class EMR_SETMITERLIMIT:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETPOLYFILLMODE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETPOLYFILLMODE"
-    has_variable = False
-    fields = ['Type', 'Size', 'PolygonFillMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'PolygonFillMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7670,18 +6877,8 @@ class EMR_SETPOLYFILLMODE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7690,14 +6887,16 @@ class EMR_SETPOLYFILLMODE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETPOLYFILLMODE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'PolygonFillMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'PolygonFillMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7705,32 +6904,32 @@ class EMR_SETPOLYFILLMODE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETROP2:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETROP2"
-    has_variable = False
-    fields = ['Type', 'Size', 'ROP2Mode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'ROP2Mode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7747,18 +6946,8 @@ class EMR_SETROP2:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7767,14 +6956,16 @@ class EMR_SETROP2:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETROP2 {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'ROP2Mode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'ROP2Mode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7782,32 +6973,32 @@ class EMR_SETROP2:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETSTRETCHBLTMODE:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETSTRETCHBLTMODE"
-    has_variable = False
-    fields = ['Type', 'Size', 'StretchMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'StretchMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7824,18 +7015,8 @@ class EMR_SETSTRETCHBLTMODE:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7844,14 +7025,16 @@ class EMR_SETSTRETCHBLTMODE:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETSTRETCHBLTMODE {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'StretchMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'StretchMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7859,32 +7042,32 @@ class EMR_SETSTRETCHBLTMODE:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETTEXTALIGN:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETTEXTALIGN"
-    has_variable = False
-    fields = ['Type', 'Size', 'TextAlignmentMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'TextAlignmentMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7901,18 +7084,8 @@ class EMR_SETTEXTALIGN:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7921,14 +7094,16 @@ class EMR_SETTEXTALIGN:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETTEXTALIGN {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'TextAlignmentMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'TextAlignmentMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -7936,32 +7111,32 @@ class EMR_SETTEXTALIGN:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETTEXTCOLOR:
+class ParsedHeader:
     format = ['4b', '4b', '4b']
-    name = "EMR_SETTEXTCOLOR"
-    has_variable = False
-    fields = ['Type', 'Size', 'Color'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Color']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -7978,18 +7153,8 @@ class EMR_SETTEXTCOLOR:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -7998,14 +7163,16 @@ class EMR_SETTEXTCOLOR:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETTEXTCOLOR {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Color']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Color'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -8013,32 +7180,32 @@ class EMR_SETTEXTCOLOR:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETTEXTJUSTIFICATION:
+class ParsedHeader:
     format = ['4b', '4b', '4b', '4b']
-    name = "EMR_SETTEXTJUSTIFICATION"
-    has_variable = False
-    fields = ['Type', 'Size', 'nBreakExtra', 'nBreakCount'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'nBreakExtra', 'nBreakCount']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -8055,18 +7222,8 @@ class EMR_SETTEXTJUSTIFICATION:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -8075,14 +7232,16 @@ class EMR_SETTEXTJUSTIFICATION:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETTEXTJUSTIFICATION {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'nBreakExtra', 'nBreakCount']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'nBreakExtra', 'nBreakCount'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -8090,32 +7249,32 @@ class EMR_SETTEXTJUSTIFICATION:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETVIEWPORTEXTEX:
+class ParsedHeader:
     format = ['4b', '4b', '8b']
-    name = "EMR_SETVIEWPORTEXTEX"
-    has_variable = False
-    fields = ['Type', 'Size', 'Extent'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Extent']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -8132,18 +7291,8 @@ class EMR_SETVIEWPORTEXTEX:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -8152,14 +7301,16 @@ class EMR_SETVIEWPORTEXTEX:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETVIEWPORTEXTEX {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Extent']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Extent'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -8167,32 +7318,32 @@ class EMR_SETVIEWPORTEXTEX:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETVIEWPORTORGEX:
+class ParsedHeader:
     format = ['4b', '4b', '8b']
-    name = "EMR_SETVIEWPORTORGEX"
-    has_variable = False
-    fields = ['Type', 'Size', 'Origin'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Origin']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -8209,18 +7360,8 @@ class EMR_SETVIEWPORTORGEX:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -8229,14 +7370,16 @@ class EMR_SETVIEWPORTORGEX:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETVIEWPORTORGEX {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Origin']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Origin'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -8244,32 +7387,32 @@ class EMR_SETVIEWPORTORGEX:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETWINDOWEXTEX:
+class ParsedHeader:
     format = ['4b', '4b', '8b']
-    name = "EMR_SETWINDOWEXTEX"
-    has_variable = False
-    fields = ['Type', 'Size', 'Extent'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Extent']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -8286,18 +7429,8 @@ class EMR_SETWINDOWEXTEX:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -8306,14 +7439,16 @@ class EMR_SETWINDOWEXTEX:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETWINDOWEXTEX {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Extent']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Extent'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -8321,32 +7456,32 @@ class EMR_SETWINDOWEXTEX:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETWINDOWORGEX:
+class ParsedHeader:
     format = ['4b', '4b', '8b']
-    name = "EMR_SETWINDOWORGEX"
-    has_variable = False
-    fields = ['Type', 'Size', 'Origin'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Origin']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -8363,18 +7498,8 @@ class EMR_SETWINDOWORGEX:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -8383,14 +7508,16 @@ class EMR_SETWINDOWORGEX:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETWINDOWORGEX {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Origin']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Origin'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -8398,32 +7525,32 @@ class EMR_SETWINDOWORGEX:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_MODIFYWORLDTRANSFORM:
+class ParsedHeader:
     format = ['4b', '4b', '24b', '4b']
-    name = "EMR_MODIFYWORLDTRANSFORM"
-    has_variable = False
-    fields = ['Type', 'Size', 'Xform', 'ModifyWorldTransformMode'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Xform', 'ModifyWorldTransformMode']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -8440,18 +7567,8 @@ class EMR_MODIFYWORLDTRANSFORM:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -8460,14 +7577,16 @@ class EMR_MODIFYWORLDTRANSFORM:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_MODIFYWORLDTRANSFORM {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Xform', 'ModifyWorldTransformMode']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Xform', 'ModifyWorldTransformMode'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -8475,32 +7594,32 @@ class EMR_MODIFYWORLDTRANSFORM:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
 
 
 
+import struct
 
+def to_unsigned(byte_integer: int) -> int: # Converts a signed integer in a single byte to an unsigned integer.
+    # assert byte_integer >= 0 and byte_integer <= 255
+    assert byte_integer >= -128 and byte_integer <= 127
+    if byte_integer < 0:
+        byte_integer += 256
+    return byte_integer
 
-class EMR_SETWORLDTRANSFORM:
+class ParsedHeader:
     format = ['4b', '4b', '24b']
-    name = "EMR_SETWORLDTRANSFORM"
-    has_variable = False
-    fields = ['Type', 'Size', 'Xform'] # These are the fields of this object.
-    variable_data = None
+
     def __init__(self, data):
         unpacked = []
         for f in self.format:
             unpacked.append(struct.unpack(f, data[:struct.calcsize(f)]))
             data = data[struct.calcsize(f):]
-        #print("unpacked: ")
-        #print(unpacked)
-        for field, value in zip(self.fields, unpacked):
-            #print("value == "+str(value))
+        fields = ['Type', 'Size', 'Xform']
+        print("unpacked: ")
+        print(unpacked)
+        for field, value in zip(fields, unpacked):
+            print("value == "+str(value))
             if isinstance(value, tuple): # This is a multibyte value.
                 # Should be integers all
                 # Convert to unsigned bytes...
@@ -8517,18 +7636,8 @@ class EMR_SETWORLDTRANSFORM:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        #print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
+        print("Here is the size thing: "+str(struct.calcsize("".join(self.format))))
         # return self.remaining_data # Return the remaining data after reading the header.
-        # Sanity checking. If the record doesn't have variable fields, then all of the data should be consumed. Otherwise this is an error condition.
-        print("Here is self.name: "+str(self.name))
-        print("Here is self.has_variable: "+str(self.has_variable))
-        print("Here is self.remaining_data: "+str(self.remaining_data))
-        if not self.has_variable and self.remaining_data: # There is left over data even though record should not be variable.
-            assert False
-        if self.has_variable:
-            # Set the variable data.
-            self.variable_data = self.remaining_data # The variable data should be the data at the end. This actually may be b"" for optional fields...
-
 
     @classmethod
     def from_file(cls, filename):
@@ -8537,14 +7646,16 @@ class EMR_SETWORLDTRANSFORM:
             return cls(data)
 
     def __repr__(self):
-        parsed_fields = {field: getattr(self, field) for field in self.fields}
-        return f"<EMR_SETWORLDTRANSFORM {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
+        fields = ['Type', 'Size', 'Xform']
+        parsed_fields = {field: getattr(self, field) for field in fields}
+        return f"<ParsedHeader {parsed_fields}, Remaining: {len(self.remaining_data)} bytes>"
 
     def serialize(self):
+        fields = ['Type', 'Size', 'Xform'] # These are the fields of this object.
         out = b"" # Initialize empty bytes output
         for i, format_string in enumerate(self.format):
             # The corresponding field is fields[i]
-            field_name = self.fields[i]
+            field_name = fields[i]
             field_val = getattr(self, field_name) # Get the actual value of the field from this object.
             field_length = field_val[0]
             field_integer = field_val[1]
@@ -8552,14 +7663,7 @@ class EMR_SETWORLDTRANSFORM:
             # field_bytes = struct.pack(format_string, field_val)
             field_bytes = field_integer.to_bytes(field_length, byteorder='little') # num.to_bytes(4, byteorder='little')
             out += field_bytes # Add the actual value to the output
-        if self.has_variable:
-            # Add variable data to the end.
-            out += self.variable_data
-        # Sanity checking. The "Size" field should actually match the size upon serialization. If not, then the mutator did not take care of the size correctly and there is a bug in the mutator.
-        assert self.Size == len(out)
         return out # Return the output bytes
-
-
 
 
 

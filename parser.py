@@ -77,7 +77,8 @@ def test_parser(): # Parse a known EMF file...
 	# Now try to parse the records
 	# records = parse_records(rest_of_data) # Try to parse the records from the data.
 	emf_obj = parse_emf_file(data)
-
+	print("Serialized bytes: "+str(emf_obj.serialize()))
+	return
 
 if __name__=="__main__":
 	test_parser()
