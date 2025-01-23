@@ -1,4 +1,5 @@
 #!/bin/sh
+cp ../emf_pdf_parsing_stuff/manual.py .
 cp ../c_header_thing/thing.py ./cthing.py
 cp ../c_header_thing/template.py ./template.py
 cp ..//emf_pdf_parsing_stuff/manual.py .
