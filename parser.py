@@ -72,12 +72,25 @@ def test_parser(): # Parse a known EMF file...
 	fh = open(TEST_FILE_NAME, "rb")
 	data = fh.read()
 	fh.close()
+	orig_data = copy.deepcopy(data)
 	# Now parse header...
 	# h, rest_of_data = parse_header(data)
 	# Now try to parse the records
 	# records = parse_records(rest_of_data) # Try to parse the records from the data.
 	emf_obj = parse_emf_file(data)
-	print("Serialized bytes: "+str(emf_obj.serialize()))
+	ser_bytes = emf_obj.serialize()
+	print("Serialized bytes: "+str(ser_bytes))
+	ind_ser = orig_data.index(ser_bytes)
+	header_bytes = orig_data[:ind_ser]
+	print("header_bytes: "+str(header_bytes))
+	assert ser_bytes in orig_data
+	assert len(header_bytes) == 108 # This because the header is extension 2
+	ext_stuff = emf_obj.serialize_header() # Serialize the header.
+	assert header_bytes == ext_stuff
+	print("Header seems to be the correct size...")
+	assert ext_stuff + ser_bytes == orig_data # Should be the original data.
+	print("Serialized data was the same as original data. This is good!!!")
+	print("[+] Passed parse test!")
 	return
 
 if __name__=="__main__":

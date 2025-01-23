@@ -31,44 +31,6 @@ def parse_records(record_data):
 		# try to unpack the stuff here
 		t, l = struct.unpack('II', t_and_l) # Unpack two little endian integers.
 		rec_bytes = b[:l] # Cutoff at l.
-		print("Here are the record bytes: "+str(rec_bytes))
-		#print(t == 0x0000004C)
-		if TEST and t == 0x0000004C: # EMR_BITBLT record
-			print("EMR_BITBLT")
-			stuff = copy.deepcopy(rec_bytes)
-			_, stuff = read_bytes(stuff, 4) # Skip type
-			_, stuff = read_bytes(stuff, 4) # Skip length
-			bounds, stuff = read_bytes(stuff, 16) # Bounds which is a RectL object.
-			xDest, stuff = read_bytes(stuff, 4) # xDest
-			yDest, stuff = read_bytes(stuff, 4) # yDest
-
-			cxDest, stuff = read_bytes(stuff, 4) # cxDest
-			cyDest, stuff = read_bytes(stuff, 4) # cyDest
-
-			# BitBltRasterOperation
-			BitBltRasterOperation, stuff = read_bytes(stuff, 4) # cyDest
-
-			xSrc, stuff = read_bytes(stuff, 4) # xSrc
-			ySrc, stuff = read_bytes(stuff, 4) # ySrc
-
-			# XformSrc
-			xSrc, stuff = read_bytes(stuff, 24) #  An XForm object (section 2.2.28) that specifies a world-space to pagespace transform to apply to the source bitmap.
-
-			BkColorSrc, stuff = read_bytes(stuff, 4) # BkColorSrc
-			# UsageSrc
-			UsageSrc, stuff = read_bytes(stuff, 4) # UsageSrc
-			offBmiSrc, stuff = read_bytes(stuff, 4) # offBmiSrc
-
-			cbBmiSrc, stuff = read_bytes(stuff, 4) # cbBmiSrc
-
-			offBitsSrc, stuff = read_bytes(stuff, 4) # offBitsSrc
-			cbBitsSrc, stuff = read_bytes(stuff, 4) # cbBitsSrc
-			#cbBitsSrc, stuff = read_bytes(stuff, 4)
-			BitmapBuffer = stuff # This should be rest of the stuff.
-			print("BitmapBuffer: "+str(BitmapBuffer))
-			BitBltRasterOperation = int.from_bytes(BitBltRasterOperation)# struct.unpack("I", BitBltRasterOperation)
-			print("BitBltRasterOperation: "+str(hex(BitBltRasterOperation)))
-			print("Done!!!"*100)
 		c = lookup_emr_record_class(t)
 		# Now actually initialize the object.
 		rec = c(rec_bytes)
@@ -98,6 +60,12 @@ class EMFFile:
 			out += r
 
 		return out
+
+	def serialize_header(self): # Serialize the header.
+
+		return self.h.serialize()
+
+
 
 def parse_emf_file(data):
 	h, rest_of_data = parse_header(data)
