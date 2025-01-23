@@ -19,6 +19,10 @@ def read_header(data):
 		# Now try to see the thing
 		serialized_data = header_object.serialize() # Try to serialize object back...
 		# Compare the original data and serialized data. Should be the same.
+		print("orig_data[:header_object.nSize[1]] == "+str(orig_data[:header_object.nSize[1]]))
+		print("serialized_data == "+str(serialized_data))
+		print("serialized_data length: "+str(len(serialized_data)))
+		print("orig_data[:header_object.nSize[1]] length: "+str(len(orig_data[:header_object.nSize[1]])))
 		assert serialized_data == orig_data[:header_object.nSize[1]] # Cut first header_object.nSize[1] bytes, because that is the actual value of the header...
 		rest_of_data = orig_data[header_object.nSize[1]:]
 		return header_object, rest_of_data # Return the rest of the data here too.
