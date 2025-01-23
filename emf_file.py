@@ -71,7 +71,6 @@ def parse_emf_file(data):
 	h, rest_of_data = parse_header(data)
 	# Now try to parse the records
 	records = parse_records(rest_of_data) # Try to parse the records from the data.
-	print("Here are the records: "+str(records))
 	obj = EMFFile(h, records, copy.deepcopy(data))
 
 	return obj
