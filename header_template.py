@@ -35,9 +35,9 @@ class ParsedHeader:
                 assert value >= 0 and value <= 255 
                 setattr(self, field, (1, value)) # Size of one byte
         # self.remaining_data = data[struct.calcsize("".join(self.format)):]
-        print("poopoooo")
-        print("struct.calcsize(f) == "+str(size_thing))
-        print("self.nSize[1] == "+str(self.nSize[1]))
+        #print("poopoooo")
+        #print("struct.calcsize(f) == "+str(size_thing))
+        #print("self.nSize[1] == "+str(self.nSize[1]))
         self.remaining_data = data[:self.nSize[1]-size_thing]
 
     @classmethod
